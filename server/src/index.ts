@@ -1,7 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import fs from 'node:fs';
-import { config } from './config';
+import path from 'node:path';
+import { config, ROOT_DIR } from './config';
 import { authRouter } from './routes/auth';
 import { brandsRouter } from './routes/brands';
 import { projectsRouter } from './routes/projects';
@@ -56,6 +57,22 @@ app.use('/api/generations', generationsRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/trash', trashRouter);
+
+/**
+ * 生产环境：由后端直接托管前端构建产物（单服务部署，前后端同源）。
+ * 前端产物位于 client/dist；只有该目录存在时才启用，本地开发不受影响。
+ * 非 /api、非 /uploads 的请求一律回落到 index.html，交给前端路由处理。
+ */
+const clientDist = path.resolve(ROOT_DIR, '..', 'client', 'dist');
+if (fs.existsSync(path.join(clientDist, 'index.html'))) {
+  app.use(express.static(clientDist));
+  app.get(/^\/(?!api\/|uploads\/).*/, (_req, res) => {
+    res.sendFile(path.join(clientDist, 'index.html'));
+  });
+  console.log('[static] 已托管前端构建产物:', clientDist);
+} else {
+  console.log('[static] 未找到 client/dist，仅提供 API（本地开发由 Vite 提供前端）');
+}
 
 // 定时维护：回收站 36 小时到期清理 + 清理没有被引用的孤儿图片（每天一次，启动时也跑一次）
 function maintain() {
