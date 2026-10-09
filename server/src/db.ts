@@ -284,6 +284,18 @@ db.exec(`
   )
 `);
 
+// 迁移：角色表增加「默认权限」列（老库补齐；项目成员默认无权限，部门成员默认只读）
+// 注意：必须放在下面「写入内置角色」之前 —— 否则全新数据库首次启动时，
+// CREATE TABLE 里还没有 default_perms 列，INSERT 会报 “table roles has no column named default_perms”。
+if (!hasColumn('roles', 'default_perms')) {
+  db.exec("ALTER TABLE roles ADD COLUMN default_perms TEXT NOT NULL DEFAULT '{}'");
+  const dm = JSON.stringify({ products: 'view', projects: 'view', users: 'view', assets: 'view', templates: 'view' });
+  db.prepare("UPDATE roles SET default_perms = perms WHERE key IN ('super_admin','senior_manager','pm','dept_head')").run();
+  db.prepare("UPDATE roles SET default_perms = ? WHERE key = 'dept_member'").run(dm);
+  db.prepare("UPDATE roles SET perms = ? WHERE key = 'kos'").run(JSON.stringify({ products: 'view', projects: 'view', assets: 'edit', templates: 'edit' }));
+  db.prepare("UPDATE roles SET default_perms = '{}' WHERE key IN ('kos','user')").run();
+}
+
 // 内置角色权限矩阵（首次写入；之后由超管在「管理角色权限」里维护）
 // perms = 该角色能拥有的「上限」；default_perms = 默认拥有（未单独授权时）
 if (!(db.prepare('SELECT COUNT(*) AS n FROM roles').get() as { n: number }).n) {
@@ -304,34 +316,6 @@ if (!(db.prepare('SELECT COUNT(*) AS n FROM roles').get() as { n: number }).n) {
     db.prepare('INSERT OR IGNORE INTO roles (key, name, level, builtin, perms, sort, default_perms) VALUES (?, ?, ?, 1, ?, ?, ?)')
       .run(key, name, level, perms, i, defaults);
   });
-}
-
-// 迁移：角色表增加「默认权限」列（老库补齐；项目成员默认无权限，部门成员默认只读）
-if (!hasColumn('roles', 'default_perms')) {
-  db.exec("ALTER TABLE roles ADD COLUMN default_perms TEXT NOT NULL DEFAULT '{}'");
-  const dm = JSON.stringify({ products: 'view', projects: 'view', users: 'view', assets: 'view', templates: 'view' });
-  db.prepare("UPDATE roles SET default_perms = perms WHERE key IN ('super_admin','senior_manager','pm','dept_head')").run();
-  db.prepare("UPDATE roles SET default_perms = ? WHERE key = 'dept_member'").run(dm);
-  db.prepare("UPDATE roles SET perms = ? WHERE key = 'kos'").run(JSON.stringify({ products: 'view', projects: 'view', assets: 'edit', templates: 'edit' }));
-  db.prepare("UPDATE roles SET default_perms = '{}' WHERE key IN ('kos','user')").run();
-}
-
-// 迁移：修正历史数据里「背景提示词 / 文字样式提示词」写反的模板标签
-// （判据：文字样式字段里是背景类文案，且背景字段里是文字样式类文案 → 交换回来）
-{
-  const rows = db.prepare('SELECT id, name, prompt_text, prompt_scene FROM template_types').all() as
-    { id: number; name: string; prompt_text: string | null; prompt_scene: string | null }[];
-  const looksBg = (s: string) => /换背景|背景|场景|环境|光线|光线|背景图|reference.*background/i.test(s);
-  const looksText = (s: string) => /文字样式|完全透明|Alpha\s*=\s*0|字体|配色|排版|压字|文字清晰/i.test(s);
-  for (const r of rows) {
-    const text = r.prompt_text || '';
-    const scene = r.prompt_scene || '';
-    if (!text || !scene) continue;
-    if (looksBg(text) && !looksText(text) && looksText(scene) && !looksBg(scene)) {
-      db.prepare('UPDATE template_types SET prompt_text = ?, prompt_scene = ? WHERE id = ?').run(scene, text, r.id);
-      console.log(`[migrate] 模板标签「${r.name}」的内置背景/文字提示词已纠正顺序`);
-    }
-  }
 }
 
 // 提示语 / 引导语：超管可自定义（覆盖前端与后端的默认文案）
@@ -359,6 +343,25 @@ db.exec(`
 if (!hasColumn('template_types', 'prompt_text')) db.exec('ALTER TABLE template_types ADD COLUMN prompt_text TEXT');
 if (!hasColumn('template_types', 'prompt_scene')) db.exec('ALTER TABLE template_types ADD COLUMN prompt_scene TEXT');
 if (!hasColumn('template_types', 'puzzle')) db.exec('ALTER TABLE template_types ADD COLUMN puzzle INTEGER NOT NULL DEFAULT 0');
+
+// 迁移：修正历史数据里「背景提示词 / 文字样式提示词」写反的模板标签
+// （判据：文字样式字段里是背景类文案，且背景字段里是文字样式类文案 → 交换回来）
+// 注意：必须放在上面补列之后 —— 否则全新数据库首次启动时还没有这两列，查询会失败。
+{
+  const rows = db.prepare('SELECT id, name, prompt_text, prompt_scene FROM template_types').all() as
+    { id: number; name: string; prompt_text: string | null; prompt_scene: string | null }[];
+  const looksBg = (s: string) => /换背景|背景|场景|环境|光线|背景图|reference.*background/i.test(s);
+  const looksText = (s: string) => /文字样式|完全透明|Alpha\s*=\s*0|字体|配色|排版|压字|文字清晰/i.test(s);
+  for (const r of rows) {
+    const text = r.prompt_text || '';
+    const scene = r.prompt_scene || '';
+    if (!text || !scene) continue;
+    if (looksBg(text) && !looksText(text) && looksText(scene) && !looksBg(scene)) {
+      db.prepare('UPDATE template_types SET prompt_text = ?, prompt_scene = ? WHERE id = ?').run(scene, text, r.id);
+      console.log(`[migrate] 模板标签「${r.name}」的内置背景/文字提示词已纠正顺序`);
+    }
+  }
+}
 // 背景提示词里配置的画面比例（供后台下拉设置，如 3:4 / 1:1 / 16:9 / 9:16）
 // 模板标签的比例设置已移除：所有 AI 生图统一以画布比例为准
 
