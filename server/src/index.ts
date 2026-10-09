@@ -35,41 +35,80 @@ app.use(express.urlencoded({ extended: true }));
 // 上传文件静态服务
 app.use('/uploads', express.static(config.uploadDir));
 
-app.get('/api/health', (_req, res) => res.json({ ok: true, service: 'xhsc-overlay-server' }));
+/**
+ * 子目录部署支持。
+ * 前端部署在 /test/ 时，页面会请求 /test/api/...，
+ * 因此把所有 API 路由同时挂载到 `/api` 和 `${basePath}/api` 两处。
+ *
+ * 注意：不能用「改写 req.url 再 next()」的中间件 —— Express 在中间件返回后
+ * 会恢复原始 url，导致匹配失败（实测 404）。挂载同一 router 两次才可靠。
+ */
+const basePath = (process.env.BASE_PATH || '').replace(/\/+$/, ''); // '' 或 '/test'
 
-app.use('/api/auth', authRouter);
-app.use('/api/brands', brandsRouter);
-app.use('/api/projects', projectsRouter);
-app.use('/api/categories', categoriesRouter);
-app.use('/api/models', modelsRouter);
-app.use('/api/template-types', templateTypesRouter);
-app.use('/api/users', usersRouter);
-app.use('/api/roles', rolesRouter);
-app.use('/api/ui-texts', uiTextsRouter);
-app.use('/api/assets', assetsRouter);
-app.use('/api/asset-tags', assetTagsRouter);
-app.use('/api/references', referencesRouter);
-app.use('/api/designs', designsRouter);
-app.use('/api/ai-config', aiConfigRouter);
-app.use('/api/ai', aiRouter);
-app.use('/api/upload', uploadRouter);
-app.use('/api/generations', generationsRouter);
-app.use('/api/settings', settingsRouter);
-app.use('/api/stats', statsRouter);
-app.use('/api/trash', trashRouter);
+/** 把一组 (路径, router) 同时挂载到根前缀和子目录前缀下 */
+function mountApi(routes: [string, express.Router][]) {
+  const prefixes = ['/api', ...(basePath ? [`${basePath}/api`] : [])];
+  for (const prefix of prefixes) {
+    for (const [p, r] of routes) app.use(`${prefix}${p}`, r);
+  }
+}
+
+// 上传文件静态服务（同样支持子目录）
+app.use('/uploads', express.static(config.uploadDir));
+if (basePath) app.use(`${basePath}/uploads`, express.static(config.uploadDir));
+
+for (const prefix of ['/api', ...(basePath ? [`${basePath}/api`] : [])]) {
+  app.get(`${prefix}/health`, (_req, res) => res.json({ ok: true, service: 'xhsc-overlay-server' }));
+}
+
+mountApi([
+  ['/auth', authRouter],
+  ['/brands', brandsRouter],
+  ['/projects', projectsRouter],
+  ['/categories', categoriesRouter],
+  ['/models', modelsRouter],
+  ['/template-types', templateTypesRouter],
+  ['/users', usersRouter],
+  ['/roles', rolesRouter],
+  ['/ui-texts', uiTextsRouter],
+  ['/assets', assetsRouter],
+  ['/asset-tags', assetTagsRouter],
+  ['/references', referencesRouter],
+  ['/designs', designsRouter],
+  ['/ai-config', aiConfigRouter],
+  ['/ai', aiRouter],
+  ['/upload', uploadRouter],
+  ['/generations', generationsRouter],
+  ['/settings', settingsRouter],
+  ['/stats', statsRouter],
+  ['/trash', trashRouter],
+]);
 
 /**
  * 生产环境：由后端直接托管前端构建产物（单服务部署，前后端同源）。
  * 前端产物位于 client/dist；只有该目录存在时才启用，本地开发不受影响。
- * 非 /api、非 /uploads 的请求一律回落到 index.html，交给前端路由处理。
+ *
+ * 子目录部署见文件上方 BASE_PATH 处理（/test/api → /api）。
  */
 const clientDist = path.resolve(ROOT_DIR, '..', 'client', 'dist');
+
 if (fs.existsSync(path.join(clientDist, 'index.html'))) {
-  app.use(express.static(clientDist));
-  app.get(/^\/(?!api\/|uploads\/).*/, (_req, res) => {
+  const serveIndex = (_req: express.Request, res: express.Response) => {
     res.sendFile(path.join(clientDist, 'index.html'));
-  });
-  console.log('[static] 已托管前端构建产物:', clientDist);
+  };
+
+  if (basePath) {
+    app.use(basePath, express.static(clientDist));
+    // 子目录下的前端路由回落（/test/login、/test/designer …）
+    app.get(new RegExp(`^${basePath}(?!/api/|/uploads/).*`), serveIndex);
+    // 根路径跳到子目录，避免用户访问到空目录
+    app.get('/', (_req, res) => res.redirect(`${basePath}/`));
+    console.log(`[static] 已托管前端构建产物: ${clientDist}（子目录 ${basePath}/）`);
+  } else {
+    app.use(express.static(clientDist));
+    app.get(/^\/(?!api\/|uploads\/).*/, serveIndex);
+    console.log('[static] 已托管前端构建产物:', clientDist);
+  }
 } else {
   console.log('[static] 未找到 client/dist，仅提供 API（本地开发由 Vite 提供前端）');
 }

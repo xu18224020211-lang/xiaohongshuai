@@ -28,22 +28,33 @@ export const clearToken = () => localStorage.removeItem(TOKEN_KEY);
 /**
  * 后端地址（前后端分离部署时使用）。
  *
- * - 留空（默认）：请求走相对路径 `/api/...`，适用于
+ * - 留空（默认）：请求走相对「当前部署前缀 + /api/...」，适用于
  *     ・本地开发（Vite 代理到 localhost:4000）
  *     ・单服务部署（后端同时托管前端，同源）
+ *     ・子目录部署（如 https://www.1510ad.com/test/，自动带上 /test 前缀）
  * - 填绝对地址：如 `https://api.example.com`，适用于
  *     前端部署在 Cloudflare Pages / Vercel、后端在另一台服务器的情况。
  *
- * 在 Cloudflare Pages / Vercel 的后台配置环境变量 `VITE_API_BASE` 即可，无需改代码。
+ * 在构建时通过环境变量 `VITE_API_BASE` 配置即可，无需改代码。
  */
 const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/+$/, '');
 
-/** 把相对路径拼成完整请求地址；API_BASE 为空时原样返回 */
+/**
+ * 部署前缀（来自 Vite 的 base）。
+ * 部署在子目录时，BASE_URL 形如 '/test/'，这里切成 '/test'。
+ * 根目录部署时为 '/'，切成空串。
+ */
+const BASE_PATH = import.meta.env.BASE_URL.replace(/\/+$/, '');
+
+/** 把相对路径拼成完整请求地址 */
 export function apiUrl(path: string): string {
-  if (!API_BASE) return path;
   // 已经是绝对地址（如 AI 返回的图片 URL）就不动
   if (/^https?:\/\//i.test(path)) return path;
-  return `${API_BASE}${path.startsWith('/') ? '' : '/'}${path}`;
+  const p = path.startsWith('/') ? path : `/${path}`;
+  // 指定了独立后端域名 → 直接拼后端地址
+  if (API_BASE) return `${API_BASE}${p}`;
+  // 否则带上部署前缀（根目录部署时 BASE_PATH 为空，等价于原样返回）
+  return `${BASE_PATH}${p}`;
 }
 
 async function request<T>(path: string, opts: { method?: string; body?: unknown; form?: FormData } = {}): Promise<T> {
@@ -68,7 +79,9 @@ async function request<T>(path: string, opts: { method?: string; body?: unknown;
   if (!res.ok) {
     if (res.status === 401) {
       clearToken();
-      if (!location.pathname.startsWith('/login')) location.href = '/login';
+      // 跳登录页时要带上部署前缀，否则子目录部署会跳到域名根目录
+      const loginPath = `${BASE_PATH}/login`;
+      if (!location.pathname.startsWith(loginPath)) location.href = loginPath;
     }
     const msg = (data as { error?: string } | null)?.error || `请求失败 ${res.status}`;
     throw new Error(msg);
