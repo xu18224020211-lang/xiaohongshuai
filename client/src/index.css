@@ -1,0 +1,134 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-zinc-950 text-zinc-100 antialiased;
+  }
+  button {
+    @apply select-none;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+      opacity 0.15s ease, transform 0.1s ease, filter 0.15s ease;
+  }
+  button:not(:disabled):active {
+    transform: translateY(1px);
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-900/40 transition hover:bg-indigo-500 disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-soft {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-zinc-700/60 bg-zinc-800 px-3 py-2 text-sm font-medium text-zinc-200 transition hover:bg-zinc-700 hover:text-white disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-zinc-800 px-3 py-2 text-sm font-medium text-zinc-200 transition hover:bg-zinc-700 hover:text-white disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-red-400 transition hover:bg-red-500/10 hover:text-red-300 disabled:pointer-events-none disabled:opacity-50;
+  }
+  .input {
+    @apply w-full rounded-lg border border-zinc-700/70 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none transition placeholder:text-zinc-600 focus:border-indigo-500;
+  }
+  .label {
+    @apply mb-1 block text-xs font-medium text-zinc-400;
+  }
+  .card {
+    @apply rounded-xl border border-zinc-800 bg-zinc-900;
+  }
+  .surface {
+    @apply rounded-xl border border-zinc-800 bg-zinc-900;
+  }
+
+  /**
+   * 画布上的「+」号：交互只用颜色变化（不动、不缩放），避免视觉上“跳”。
+   * 注意：全局有 button:active { transform: translateY(1px) }，
+   * 这里用同等/更高优先级把它压掉，保证点击时位置完全不变。
+   */
+  .plus-btn {
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    border-radius: 9999px;
+    border: 2px dashed rgba(212, 212, 216, 0.8);
+    background-color: rgba(228, 228, 231, 0.16);
+    color: rgba(244, 244, 245, 0.9);
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  }
+  .plus-btn:hover {
+    background-color: rgba(129, 140, 248, 0.35);
+    border-color: rgba(199, 210, 254, 1);
+    color: #ffffff;
+  }
+  .plus-btn:active,
+  button.plus-btn:not(:disabled):active {
+    /* 覆盖全局位移，仅靠颜色反馈 */
+    transform: none;
+    background-color: rgba(99, 102, 241, 0.55);
+    border-color: #ffffff;
+    color: #ffffff;
+  }
+}
+
+/* 细滚动条 */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: #52525b; }
+
+/**
+ * 移动端后台排版收紧：
+ * 小屏上按钮 / 下拉框 / 输入框按原尺寸会撑出手机边框，这里统一缩小尺寸与字号，
+ * 并允许长内容换行、阻断横向溢出。
+ */
+@media (max-width: 767px) {
+  /* 阻断页面级横向溢出（表格等确实需要横滑的容器内部自行 overflow-x-auto） */
+  html, body { overflow-x: hidden; }
+
+  .admin-mobile {
+    /* 按钮：更紧凑 */
+    & .btn-primary,
+    & .btn-soft,
+    & .btn-ghost,
+    & .btn-danger {
+      padding: 0.375rem 0.625rem;
+      font-size: 0.75rem;
+      line-height: 1rem;
+      gap: 0.25rem;
+      border-radius: 0.5rem;
+    }
+
+    /* 下拉框 / 输入框：更小字号，避免撑破容器 */
+    & select.input,
+    & input.input,
+    & textarea.input,
+    input.input,
+    select.input,
+    textarea.input {
+      padding: 0.375rem 0.5rem;
+      font-size: 0.75rem;
+      line-height: 1rem;
+      border-radius: 0.5rem;
+    }
+
+    /* 标签 / 说明文字 */
+    & .label { font-size: 0.6875rem; }
+
+    /* 卡片内边距收紧，留出左右空间 */
+    & .card,
+    & .surface { border-radius: 0.75rem; }
+
+    /* 按钮行允许换行，避免把内容挤成横向滚动 */
+    & .flex > .btn-primary,
+    & .flex > .btn-soft,
+    & .flex > .btn-ghost { flex: 0 1 auto; }
+
+    /* 长文本（提示词等）强制换行，不撑宽容器 */
+    & p, & span, & div { overflow-wrap: anywhere; }
+  }
+}
+::-webkit-scrollbar-track { background: transparent; }
