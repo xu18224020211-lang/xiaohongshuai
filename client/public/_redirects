@@ -1,0 +1,14 @@
+# Cloudflare Pages 配置
+#
+# 作用：前端路由（/login、/designer、/admin …）直接访问或刷新时不会 404。
+# 原理：找不到对应文件时统一返回 index.html，交给前端 React Router 处理。
+#
+# 前端为静态托管，后端需另行部署（见 docs/阿里云部署指南.md），
+# 并在 Cloudflare Pages 后台配置环境变量 VITE_API_BASE 指向后端地址。
+#
+# 注意：如果后端与前端不同域，跨域请求由后端 CORS 处理（后端已 app.use(cors())）。
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

@@ -1,0 +1,4 @@
+# 部署相关文件必须保持 LF，否则 Cloudflare / Linux 解析出错
+_redirects text eol=lf
+deploy.sh text eol=lf
+*.sh text eol=lf

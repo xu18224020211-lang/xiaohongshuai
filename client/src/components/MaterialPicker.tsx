@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { api } from '../lib/api';
+import { api, apiUrl } from '../lib/api';
 import { useUiTexts } from '../lib/uiTexts';
 import { useAuth } from '../store/auth';
 import { canBrowseAllProjects } from '../lib/types';
@@ -149,7 +149,7 @@ export default function MaterialPicker({
                 className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 transition hover:border-indigo-500"
               >
                 <span className="relative block aspect-[3/4] w-full overflow-hidden">
-                  <img src={a.url} alt="" className="h-full w-full object-cover" />
+                  <img src={apiUrl(a.url)} alt="" className="h-full w-full object-cover" />
                   <span className="absolute left-1 top-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-zinc-200">
                     {typeName(a.type)}
                   </span>

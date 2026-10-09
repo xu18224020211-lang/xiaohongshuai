@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDesign } from '../store/design';
 import { useAuth } from '../store/auth';
-import { api } from '../lib/api';
+import { api, apiUrl } from '../lib/api';
 import AssetKindBar, { type AssetKind } from './AssetKindBar';
 import { useUiTexts } from '../lib/uiTexts';
 import { loadImageSize } from '../lib/image';
@@ -523,7 +523,7 @@ function AssetsTab() {
           {list.map((a) => (
             <button key={a.id} onClick={() => void pick(a)} title={typeName(a.type)} className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 transition hover:border-indigo-500">
               <span className="relative block aspect-[3/4] w-full overflow-hidden">
-                <img src={a.url} alt="" className="h-full w-full object-cover" />
+                <img src={apiUrl(a.url)} alt="" className="h-full w-full object-cover" />
                 <span className="absolute left-0.5 top-0.5 rounded bg-black/70 px-1 py-0.5 text-[9px] text-zinc-200">{T(`asset.kind.${a.type === 'product' ? 'product' : 'sticker'}`)}</span>
                 {a.project_id && <span className="absolute right-0.5 top-0.5 rounded bg-amber-500/80 px-1 py-0.5 text-[9px] text-black">专属</span>}
                 {/* 悬停只显示「选用」两个字 */}
@@ -598,7 +598,7 @@ function HistoryTab({ onPick }: { onPick?: () => void } = {}) {
             {pageItems.map((g) => (
               <div key={g.id} className="group relative">
                 <button onClick={() => void reuse(g)} title={g.prompt} className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 transition hover:border-indigo-500">
-                  <img src={g.url} alt="" className="aspect-[3/4] w-full object-cover" />
+                  <img src={apiUrl(g.url)} alt="" className="aspect-[3/4] w-full object-cover" />
                 </button>
                 <span className="pointer-events-none absolute left-1 top-1 rounded bg-black/70 px-1 text-[9px] text-zinc-300">
                   {g.kind === 'scene' ? '场景' : '文字'}

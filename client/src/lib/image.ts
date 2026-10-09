@@ -1,5 +1,6 @@
 import type { OverlayItem, PlacedImage, PuzzleState } from './types';
 import { puzzleCellRects, puzzleCellGeometry, coverRect } from './puzzle';
+import { apiUrl } from './api';
 export { coverRect } from './puzzle';
 
 export function loadImage(url: string): Promise<HTMLImageElement> {
@@ -8,7 +9,8 @@ export function loadImage(url: string): Promise<HTMLImageElement> {
     img.crossOrigin = 'anonymous';
     img.onload = () => resolve(img);
     img.onerror = () => reject(new Error('图片加载失败: ' + url));
-    img.src = url;
+    // 前后端分离部署时，后端返回的 /uploads/... 需要补上后端域名
+    img.src = apiUrl(url);
   });
 }
 

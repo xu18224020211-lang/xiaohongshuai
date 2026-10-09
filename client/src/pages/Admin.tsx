@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../lib/api';
+import { api, apiUrl } from '../lib/api';
 import { useAuth } from '../store/auth';
 import { useIsMobileLayout } from '../store/viewMode';
 import Modal from '../components/Modal';
@@ -225,7 +225,7 @@ function DashboardTab() {
             {data.topTemplates.length === 0 && <div className="text-xs text-zinc-600">暂无模板</div>}
             {data.topTemplates.map((tpl) => (
               <div key={tpl.id} className="flex items-center gap-2.5">
-                <img src={tpl.url} alt="" className="h-9 w-7 shrink-0 rounded bg-zinc-950 object-cover" />
+                <img src={apiUrl(tpl.url)} alt="" className="h-9 w-7 shrink-0 rounded bg-zinc-950 object-cover" />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-xs text-zinc-200">{tpl.name || '未命名模板'}</div>
                   <div className="truncate text-[10px] text-zinc-500">
@@ -244,7 +244,7 @@ function DashboardTab() {
             {data.recentAssets.length === 0 && <div className="col-span-5 text-xs text-zinc-600">暂无素材</div>}
             {data.recentAssets.map((x) => (
               <div key={x.id} className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950">
-                <img src={x.url} alt="" className="aspect-square w-full object-cover" />
+                <img src={apiUrl(x.url)} alt="" className="aspect-square w-full object-cover" />
               </div>
             ))}
           </div>
@@ -1259,7 +1259,7 @@ function ProjectExtras({
         <div className="grid grid-cols-3 gap-2 md:grid-cols-6">
           {projAssets.map((a) => (
             <div key={a.id} className="group relative overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950">
-              <img src={a.url} alt="" className="aspect-square w-full object-cover" />
+              <img src={apiUrl(a.url)} alt="" className="aspect-square w-full object-cover" />
               <div className="absolute inset-0 flex items-center justify-center gap-1.5 bg-black/65 opacity-0 transition group-hover:opacity-100">
                 <button className="btn-soft !px-2 !py-1 text-[10px]" onClick={() => setAssetEdit(a)}>修改</button>
                 <button className="btn-danger !px-2 !py-1 text-[10px]" onClick={() => setDelAsset(a)}>删除</button>
@@ -1287,7 +1287,7 @@ function ProjectExtras({
         <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
           {templates.map((t) => (
             <div key={t.id} className="group relative overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950">
-              <img src={t.url} alt="" className="w-full" />
+              <img src={apiUrl(t.url)} alt="" className="w-full" />
               <div className="absolute inset-0 flex items-center justify-center gap-1.5 bg-black/65 opacity-0 transition group-hover:opacity-100">
                 <button className="btn-soft !px-2 !py-1 text-[10px]" onClick={() => setTplEdit(t)}>修改</button>
                 <button className="btn-danger !px-2 !py-1 text-[10px]" onClick={() => setDelTpl(t)}>删除</button>
@@ -2468,7 +2468,7 @@ function TrashModal({ open, onClose, flash }: { open: boolean; onClose: () => vo
         <div className="grid grid-cols-4 gap-2 md:grid-cols-6">
           {items.map((it) => (
             <div key={`${it.kind}-${it.id}`} className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950">
-              <img src={it.url} alt="" className="aspect-square w-full object-cover" />
+              <img src={apiUrl(it.url)} alt="" className="aspect-square w-full object-cover" />
               <div className="px-1.5 py-1 text-[10px] text-zinc-400">
                 <div className="truncate">{it.project_name ? `${it.project_name} 专属` : '通用'}</div>
                 <div className="truncate text-zinc-500">{it.deleted_at}</div>
@@ -2703,7 +2703,7 @@ function AssetsTab({ canEdit = true }: { canEdit?: boolean }) {
               onClick={() => setEditAsset(a)}
             >
               <div className="relative aspect-[3/4] w-full overflow-hidden bg-zinc-950">
-                <img src={a.url} alt="" className="h-full w-full object-cover" />
+                <img src={apiUrl(a.url)} alt="" className="h-full w-full object-cover" />
                 <span className="absolute left-1.5 top-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-zinc-300">
                   {a.project_id ? `专属 · ${a.project_name || ''}` : '通用'}
                 </span>
@@ -3228,7 +3228,7 @@ function AssetEditModal({
         {/* 左侧：素材预览大图（右下角显示归属） + 右侧：按钮与选框 */}
         <div className="grid gap-4 md:grid-cols-[minmax(280px,42%)_1fr]">
           <div className="relative self-start overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950">
-            <img src={asset.url} alt="" className="max-h-[62vh] w-full object-contain" />
+            <img src={apiUrl(asset.url)} alt="" className="max-h-[62vh] w-full object-contain" />
             {asset.project_id && (
               <span className="absolute left-2 top-2 rounded bg-black/70 px-2 py-0.5 text-[11px] text-zinc-200">专属 · {asset.project_name || ''}</span>
             )}
@@ -3396,7 +3396,7 @@ function TemplatesTab({ canEdit = true, canBrowse = true }: { canEdit?: boolean;
       <div className="group relative cursor-pointer" onClick={() => setEditTpl(t)}>
         {/* 模板底图：统一 3:4 预览框 */}
         <div className="aspect-[3/4] w-full overflow-hidden bg-zinc-950">
-          <img src={t.url} alt={t.name || ''} className="h-full w-full object-cover" />
+          <img src={apiUrl(t.url)} alt={t.name || ''} className="h-full w-full object-cover" />
         </div>
         <span className="absolute left-1.5 top-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-zinc-200">{t.template_type_name || (t.kind === 'B' ? '产品+背景+压字' : '底图压字')}</span>
         <span className="absolute right-1.5 top-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-zinc-300">{t.project_id ? `专属 · ${t.project_name || ''}` : '通用'}</span>

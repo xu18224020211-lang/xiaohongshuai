@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { api } from '../lib/api';
+import { api, apiUrl } from '../lib/api';
 import EditableHint from './EditableHint';
 import { loadImageSize, sizeForCanvas } from '../lib/image';
 import { loadImageSize as loadSize } from '../lib/image';
@@ -436,7 +436,7 @@ export default function AssetPanel({ compact = false, canvasSlot = null }: { com
                 画布右上角绿色打勾）；PC 端保留预览 */}
             {!compact && (figure2 ? (
               <div className="relative overflow-hidden rounded-xl border border-zinc-700 bg-zinc-950">
-                <img src={figure2.url} alt="" className="max-h-40 w-full object-contain" />
+                <img src={apiUrl(figure2.url)} alt="" className="max-h-40 w-full object-contain" />
                 <span className="absolute left-2 top-2 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-zinc-100">图2</span>
                 <span
                   title="图2 已配置"

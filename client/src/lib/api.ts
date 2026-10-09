@@ -25,6 +25,27 @@ export const getToken = () => localStorage.getItem(TOKEN_KEY) || '';
 export const setToken = (t: string) => localStorage.setItem(TOKEN_KEY, t);
 export const clearToken = () => localStorage.removeItem(TOKEN_KEY);
 
+/**
+ * 后端地址（前后端分离部署时使用）。
+ *
+ * - 留空（默认）：请求走相对路径 `/api/...`，适用于
+ *     ・本地开发（Vite 代理到 localhost:4000）
+ *     ・单服务部署（后端同时托管前端，同源）
+ * - 填绝对地址：如 `https://api.example.com`，适用于
+ *     前端部署在 Cloudflare Pages / Vercel、后端在另一台服务器的情况。
+ *
+ * 在 Cloudflare Pages / Vercel 的后台配置环境变量 `VITE_API_BASE` 即可，无需改代码。
+ */
+const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/+$/, '');
+
+/** 把相对路径拼成完整请求地址；API_BASE 为空时原样返回 */
+export function apiUrl(path: string): string {
+  if (!API_BASE) return path;
+  // 已经是绝对地址（如 AI 返回的图片 URL）就不动
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${API_BASE}${path.startsWith('/') ? '' : '/'}${path}`;
+}
+
 async function request<T>(path: string, opts: { method?: string; body?: unknown; form?: FormData } = {}): Promise<T> {
   const headers: Record<string, string> = {};
   const token = getToken();
@@ -36,7 +57,7 @@ async function request<T>(path: string, opts: { method?: string; body?: unknown;
     headers['Content-Type'] = 'application/json';
     body = JSON.stringify(opts.body);
   }
-  const res = await fetch(path, { method: opts.method || 'GET', headers, body });
+  const res = await fetch(apiUrl(path), { method: opts.method || 'GET', headers, body });
   const text = await res.text();
   let data: unknown = null;
   try {

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUi } from '../store/ui';
 import { useAuth } from '../store/auth';
-import { api } from '../lib/api';
+import { api, apiUrl } from '../lib/api';
 import { useUiTexts } from '../lib/uiTexts';
 import EditableHint from '../components/EditableHint';
 import { isSmartRefType } from '../lib/smartRef';
@@ -220,7 +220,7 @@ export default function Home() {
                     否则缩放时底部会露出背景色细线（看起来像白线闪烁） */}
                 <div className="relative overflow-hidden bg-zinc-950">
                   <img
-                    src={t.url}
+                    src={apiUrl(t.url)}
                     alt={t.name || ''}
                     className="block w-full"
                     loading="lazy"

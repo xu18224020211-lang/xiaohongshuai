@@ -43,3 +43,4 @@ desktop.ini
 tmp/
 __tmp*
 scripts-tmp*
+.tmpbuild/

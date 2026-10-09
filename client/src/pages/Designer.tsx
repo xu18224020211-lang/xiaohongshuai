@@ -4,7 +4,7 @@ import AssetPanel from '../components/AssetPanel';
 import MaterialPicker from '../components/MaterialPicker';
 import DesignerCanvas from '../components/DesignerCanvas';
 import LayerPanel from '../components/LayerPanel';
-import { api } from '../lib/api';
+import { api, apiUrl } from '../lib/api';
 import { compositeLayers, downloadBlob, getDrawable, loadImageSize } from '../lib/image';
 import { useUiTexts } from '../lib/uiTexts';
 import { getCurrentMask } from '../lib/mask';
@@ -479,7 +479,7 @@ export default function Designer() {
       {templatePreview && (
         <div className="absolute left-1.5 top-1.5 z-20 overflow-hidden rounded-lg border border-zinc-600 shadow-xl shadow-black/60 sm:rounded-xl">
           <img
-            src={templatePreview}
+            src={apiUrl(templatePreview)}
             alt="模板预览"
             className={isMobileLayout ? 'max-h-[16vh] w-auto max-w-[26vw] object-contain' : 'max-h-[30vh] w-auto max-w-[19vw] object-contain'}
           />
